@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Admin Dashboard</h2>
+    
+    <!-- Navigation tabs -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button" role="tab">Channels</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">Messages</button>
+        </li>
+    </ul>
+    
+    <!-- Tab content -->
+    <div class="tab-content" id="adminTabsContent">
+        <!-- Users Tab -->
+        <div class="tab-pane fade show active" id="users" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Admin Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        {% if user.is_admin %}
+                                        <span class="badge bg-success">Admin</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <form action="{{ url_for('toggle_admin', user_id=user.id) }}" method="POST" class="me-2">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                                                </button>
+                                            </form>
+                                            {% if user.id != current_user.id %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteUserModal" 
+                                                    data-user-id="{{ user.id }}"
+                                                    data-username="{{ user.username }}">
+                                                Delete
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Channels Tab -->
+        <div class="tab-pane fade" id="channels" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Channel Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Channel Name</th>
+                                    <th>Active Users</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for channel, user_count in channels %}
+                                <tr>
+                                    <td>{{ channel }}</td>
+                                    <td>{{ user_count }}</td>
+                                    <td>
+                                        <form action="{{ url_for('delete_channel', channel=channel) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this channel?')">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Tab -->
+        <div class="tab-pane fade" id="messages" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Messages</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th>User</th>
+                                    <th>Message</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in messages %}
+                                <tr>
+                                    <td>{{ message.channel }}</td>
+                                    <td>{{ message.user.username }}</td>
+                                    <td>{{ message.content }}</td>
+                                    <td>{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirm User Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete user <span id="deleteUsername" class="fw-bold"></span>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" action="" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteUserModal = document.getElementById('deleteUserModal');
+    if (deleteUserModal) {
+        deleteUserModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const userId = button.getAttribute('data-user-id');
+            const username = button.getAttribute('data-username');
+            
+            const deleteForm = document.getElementById('deleteUserForm');
+            const deleteUsername = document.getElementById('deleteUsername');
+            
+            deleteForm.action = `/admin/delete_user/${userId}`;
+            deleteUsername.textContent = username;
+        });
+    }
+});
+</script>
+{% endblock %}

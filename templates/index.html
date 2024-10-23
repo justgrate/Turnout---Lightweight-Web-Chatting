@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% if current_user.is_admin %}Create or {% endif %}Join a Channel</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_admin %}
+                <form action="{{ url_for('create_channel') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="channel" class="form-label">Channel Name</label>
+                        <input type="text" class="form-control" id="channel" name="channel" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Channel</button>
+                </form>
+                
+                <hr>
+                {% endif %}
+                
+                <h6>Available Channels:</h6>
+                <div class="list-group">
+                    {% for channel, user_count in channels %}
+                    <a href="{{ url_for('chat', channel=channel) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ channel }}
+                        <span class="badge bg-secondary rounded-pill">{{ user_count }} user{{ 's' if user_count != 1 }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
